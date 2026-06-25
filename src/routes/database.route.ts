@@ -14,12 +14,16 @@ db.use('*', authMiddleware);
 // ---------------------------------------------------------------------------
 
 const ALLOWED_TABLES = new Set([
+    // Facturly
     'profiles',
-    'posts',
-    'comments',
-    'categories',
-    // → ajouter tes tables ici
+    'companies',
+    'invoices',
+    'invoice_items',
 ]);
+
+
+// Tables qui nécessitent l'injection automatique de owner_id depuis le JWT
+const OWNER_ID_TABLES = new Set(['companies']);
 
 function isTableAllowed(table: string): boolean {
     return ALLOWED_TABLES.has(table);
@@ -115,7 +119,15 @@ db.post('/:table', async (c) => {
     if (guard) return guard;
 
     const supabase = createUserClient(c.get(USER_TOKEN_KEY));
-    const body     = await c.req.json();
+    let body       = await c.req.json();
+
+    // Injection automatique de owner_id depuis le JWT pour les tables concernées
+    if (OWNER_ID_TABLES.has(table)) {
+        const user = c.get('user');
+        body = Array.isArray(body)
+            ? body.map((row: Record<string, unknown>) => ({ ...row, owner_id: user.id }))
+            : { ...body, owner_id: user.id };
+    }
 
     const { data, error } = await supabase.from(table).insert(body).select();
 

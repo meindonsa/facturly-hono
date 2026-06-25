@@ -6,6 +6,8 @@ import { authMiddleware, USER_TOKEN_KEY, type AuthVariables } from '../middlewar
 
 const auth = new Hono<{ Variables: AuthVariables }>();
 
+// Client anon partagé — uniquement pour les opérations publiques (login, refresh)
+// Pas de service role, pas de persistance de session
 const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
 });
@@ -123,6 +125,34 @@ auth.get('/me', authMiddleware, (c) => {
         email:    user.email,
         role:     user.role,
         metadata: user.user_metadata,
+    });
+});
+
+
+// ---------------------------------------------------------------------------
+// PATCH /api/auth/me
+// Protégé — mise à jour des métadonnées de l'utilisateur courant
+// Body : { full_name? }
+// ---------------------------------------------------------------------------
+
+auth.patch('/me', authMiddleware, async (c) => {
+    const body = await c.req.json<{ full_name?: string }>();
+    const user = c.get('user');
+
+    // updateUser nécessite une session active — on passe par l'admin API
+    // qui identifie l'utilisateur par son id extrait du JWT
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
+        user.id,
+        { user_metadata: { full_name: body.full_name } }
+    );
+
+    if (error) return c.json({ error: error.message }, 400);
+
+    return c.json({
+        id:       data.user.id,
+        email:    data.user.email,
+        role:     data.user.role,
+        metadata: data.user.user_metadata,
     });
 });
 
