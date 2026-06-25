@@ -8,6 +8,7 @@ import {authRoutes} from "./routes/auth.route.js";
 import {databaseRoutes} from "./routes/database.route.js";
 import { logger } from "hono/logger";
 import {errorHandler} from "./middleware/error-handler.middleware.js";
+import {storageRoutes} from "./routes/storage.route.js";
 
 const app = new Hono()
 
@@ -22,6 +23,7 @@ app.use('*', appTokenMiddleware);
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: Date.now() }));
 app.route('/api/auth', authRoutes);
 app.route('/api/db',   databaseRoutes);
+app.route('/api/storage', storageRoutes);
 
 app.notFound((c) => c.json({ error: 'Not Found', path: c.req.path }, 404));
 app.onError(errorHandler);
