@@ -10,6 +10,7 @@ import { logger } from "hono/logger";
 import {errorHandler} from "./middleware/error-handler.middleware.js";
 import {storageRoutes} from "./routes/storage.route.js";
 import {pdfRoutes} from "./routes/pdf.route.js";
+import {dashboardRoutes} from "./routes/dashboard.route.js";
 
 const app = new Hono()
 
@@ -26,6 +27,7 @@ app.route('/api/auth', authRoutes);
 app.route('/api/db',   databaseRoutes);
 app.route('/api/storage', storageRoutes);
 app.route('/api/invoices', pdfRoutes);
+app.route('/api/dashboard', dashboardRoutes);
 
 app.notFound((c) => c.json({ error: 'Not Found', path: c.req.path }, 404));
 app.onError(errorHandler);
