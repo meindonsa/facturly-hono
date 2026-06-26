@@ -19,16 +19,18 @@ const anonClient = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
 // ---------------------------------------------------------------------------
 
 auth.post('/register', async (c) => {
-    const body = await c.req.json<{ email?: string; password?: string }>();
+    const body = await c.req.json<{ email?: string; password?: string, full_name?: string }>();
 
-    if (!body.email || !body.password) {
-        return c.json({ error: 'Bad Request', message: 'email et password sont requis.' }, 400);
+    if (!body.email || !body.password || !body.full_name) {
+        return c.json({ error: 'Bad Request', message: 'email et password et le nom sont requis.' }, 400);
     }
-
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: body.email,
         password: body.password,
         email_confirm: true,
+        user_metadata: {
+            display_name: body.full_name,
+        },
     });
 
     if (error) return c.json({ error: error.message }, 400);
@@ -143,7 +145,7 @@ auth.patch('/me', authMiddleware, async (c) => {
     // qui identifie l'utilisateur par son id extrait du JWT
     const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
         user.id,
-        { user_metadata: { full_name: body.full_name } }
+        { user_metadata: { display_name: body.full_name } }
     );
 
     if (error) return c.json({ error: error.message }, 400);
